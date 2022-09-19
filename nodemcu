@@ -1,0 +1,68 @@
+
+
+#include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
+const char* ssid = "Warmachine";
+const char* password = "123456789123";
+#define BOTtoken "5192181127:AAE9BZ6nclGohW6nVK0tp1J2-1ljVM_uNZg"
+#define CHAT_ID "877393580"
+X509List cert(TELEGRAM_CERTIFICATE_ROOT);
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOTtoken, client);
+uint8_t met = D1;
+ uint8_t wet = D2;
+  uint8_t dry = D3;
+void setup() {
+  
+  
+  Serial.begin(115200);
+  configTime(0, 0, "pool.ntp.org");      // get UTC time via NTP
+  client.setTrustAnchors(&cert); // Add root certificate for api.telegram.org
+  pinMode(met, OUTPUT);
+  pinMode(wet, OUTPUT);
+  pinMode(dry, OUTPUT);
+  // Attempt to connect to Wifi network:
+  Serial.print("Connecting Wifi: ");
+  Serial.println(ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  bot.sendMessage(CHAT_ID, "Bot started up", "");
+}
+void loop() {
+  int me=digitalRead(met);
+  int we=digitalRead(wet);
+  int dr=digitalRead(dry);
+  Serial.println("\nmetal:");
+  Serial.print(me);
+  Serial.println("\ndry:");
+  Serial.print(dr);
+  Serial.println("\nwet:");
+  Serial.print(we);
+  if(me==1 && we==1 && dr==1 ){
+    bot.sendMessage(CHAT_ID, "dustbinfull", "");
+    Serial.println("dustbinfull");
+  }
+  if(me==1){
+    bot.sendMessage(CHAT_ID, "metal dustbin full", "");
+    Serial.println("metal dustbin full");
+  }
+  if(we==1){
+    bot.sendMessage(CHAT_ID, "wet dustbin full", "");
+    Serial.println("wet dustbin full");
+  }
+  if(dr==1){
+    bot.sendMessage(CHAT_ID, "dry dustbin full", "");
+    Serial.println("dry dustbin full");
+  }
+  
+}
