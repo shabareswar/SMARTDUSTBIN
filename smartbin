@@ -1,0 +1,146 @@
+#include <Servo.h>
+#include <DHT.h>
+#define d 7
+#define dtype DHT22
+DHT dht(d,dtype); 
+int distance,metal_distance,wet_distance,dry_distance,human,press1,limit=27;
+float duration,hum_limit,h;
+const int wet_lvl=48;
+const int dry_lvl=50;
+const int metal_lvl=52;
+Servo door,lid,wet,metal;
+int ultra(int trig,int echo)
+{
+  digitalWrite(trig,LOW); 
+  delay(2);
+  digitalWrite(trig,HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig,LOW);
+  duration=pulseIn(echo,HIGH);
+  distance=duration/29.1;
+  return distance/2;
+  
+}
+void setup() {
+  pinMode(48,OUTPUT);
+  pinMode(50,OUTPUT);
+  pinMode(52,OUTPUT);
+  pinMode(2,INPUT);
+  pinMode(23,OUTPUT);//detecting the person
+  pinMode(22,INPUT);
+  pinMode(25,OUTPUT);//detecting metal
+  pinMode(24,INPUT);
+  pinMode(27,OUTPUT);//detecting dry
+  pinMode(26,INPUT);
+  pinMode(29,OUTPUT);//detecting wet
+  pinMode(28,INPUT);
+  Serial.begin(9600);
+  door.attach(30);
+  lid.attach(32);
+  metal.attach(34);
+  wet.attach(36);
+  dht.begin();
+}
+void loop() {
+  digitalWrite(wet_lvl,LOW);
+  digitalWrite(dry_lvl,LOW);
+  digitalWrite(metal_lvl,LOW);
+  door.write(0);
+  metal_distance=ultra(25,24);
+  delay(500);
+  dry_distance=ultra(27,26);
+  delay(500);
+  wet_distance=ultra(29,28);
+  delay(500);
+  Serial.println("\nwet_lvl:");
+  Serial.print(wet_distance);
+  Serial.println("\nmetal_lvl:");
+  Serial.print(metal_distance);
+  Serial.println("\ndry_lvl");
+  Serial.print(dry_distance);
+  Serial.println("\nhumidity reading_limit:");
+  Serial.print(hum_limit);
+  lid.write(100);
+  delay(2000);
+  wet.write(70);
+  delay(2000);
+  metal.write(90);
+  delay(2000);
+         
+  if(metal_distance>limit&&wet_distance>=limit&&dry_distance>limit)
+  {
+    human=ultra(23,22);
+    press1=digitalRead(2);
+    
+    Serial.println("\nhumidity reading_limit:");
+    Serial.print(hum_limit);
+    delay(100);
+    Serial.println("\nmetalstatus:");
+    Serial.print(press1);
+    Serial.println("\n");
+    if(human<40)
+    {
+      door.write(180);
+      delay(5000);
+      door.write(0);
+      delay(500);
+      
+      h=dht.readHumidity();
+      press1=digitalRead(2);
+      Serial.println("door open");
+      Serial.print(human);
+      Serial.println("\nhumidity reading_limit:");
+      Serial.print(hum_limit);
+      Serial.println("\npresent_humidity reading:");
+      Serial.print(h);
+      Serial.println("\nhumiditydifference:");
+      Serial.print(h-hum_limit);
+      Serial.println("\n metal_status");
+      Serial.print(press1);
+      delay(5000);
+      if(press1==HIGH)
+      {
+        metal.write(40);
+        delay(5000);
+        lid.write(140);//not callibrated
+        delay(5000);
+      }
+      else if(h-hum_limit>0.2)
+      {
+        Serial.println("\nwetdetected-------------\n");
+        wet.write(120);//not callibrated
+        delay(2000);
+        lid.write(45);
+        delay(2000); 
+        
+      }
+      else
+      {
+        lid.write(30);//not callibrated
+        delay(2000);
+      }
+    }
+    hum_limit=dht.readHumidity();
+    delay(100);
+  }
+  else{
+    if(metal_distance<limit&&wet_distance<limit&&dry_distance<limit){
+      digitalWrite(wet_lvl,HIGH);
+      digitalWrite(dry_lvl,HIGH);
+      digitalWrite(metal_lvl,HIGH); 
+    }
+    else if(metal_distance<limit){
+      digitalWrite(metal_lvl,HIGH);
+    }
+    else if(wet_distance<=limit){
+      digitalWrite(wet_lvl,HIGH);
+    }
+    else if(dry_distance<=limit){
+      digitalWrite(dry_lvl,HIGH);
+    }
+    delay(5000);
+    
+  }
+  
+  // put your main code here, to run repeatedly:
+}
